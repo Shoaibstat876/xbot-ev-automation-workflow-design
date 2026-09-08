@@ -1,0 +1,107 @@
+flowchart TB
+subgraph CUSTOMER["CUSTOMER"]
+A([Start]) --> B[Send WhatsApp message]
+end
+
+subgraph CHANNEL["WHATSAPP CHANNEL"]
+C[Twilio WhatsApp API]
+end
+
+subgraph BOT["BOT / CONVERSATION LAYER"]
+D[Receive webhook]
+E{What does the customer want?}
+F[Price Query]
+G[Test Ride Booking]
+H[Fallback / Help]
+end
+
+subgraph BACKEND["BACKEND / BUSINESS LOGIC"]
+I[FastAPI validates request]
+J[Catalog and Price Service]
+K[Test Ride Booking Service]
+end
+
+subgraph DATA["DATA / SUPPORT"]
+L[(PostgreSQL Database)]
+M[Human Support]
+end
+
+B --> C
+C --> D
+D --> I
+I --> E
+E -->|Check Price| F
+E -->|Book Test Ride| G
+J --> L
+K --> L
+
+F --> P1{Bike model provided?}
+P1 -->|No| P2[Ask customer for bike model]
+P2 --> P1
+P1 -->|Yes| P3[Validate bike model]
+P3 --> P4{Is model valid?}
+P4 -->|No| P5[Show valid XBOT EV models]
+P5 --> P1
+P4 -->|Yes| J
+J --> P6{Price available?}
+P6 -->|Yes| P7[Show official price and currency]
+P6 -->|No| P8[Price unavailable]
+P8 --> M
+P7 --> P9{Book a test ride?}
+P9 -->|Yes| G
+P9 -->|No| P10([End])
+
+G --> TR1{Bike model already known?}
+TR1 -->|No| TR2[Ask customer for bike model]
+TR1 -->|Yes| TR3[Validate selected bike model]
+TR2 --> TR3
+TR3 --> TR4{Is bike model valid?}
+TR4 -->|No| TR5[Show valid XBOT EV models]
+TR5 --> TR2
+TR4 -->|Yes| TR6[Ask preferred location]
+TR6 --> TR7[Ask preferred date]
+TR7 --> TR8{Is date valid and in the future?}
+TR8 -->|No| TR9[Ask for a valid future date]
+TR9 --> TR7
+TR8 -->|Yes| TR10[Ask preferred time]
+TR10 --> TR11{Is time valid and within operating hours?}
+TR11 -->|No| TR12[Show available times]
+TR12 --> TR10
+TR11 -->|Yes| TR13[Check test ride slot availability]
+TR13 --> TR14{Is test ride slot available?}
+TR14 -->|No| TR15[Show alternative available slots]
+TR15 --> TR10
+TR14 -->|Yes| TR16[Ask customer name]
+TR16 --> TR17[Show booking summary]
+TR17 --> TR18{Confirm booking?}
+TR18 -->|Confirm| TR19[Create booking in backend]
+TR18 -->|Change| TR20{What would you like to change?}
+TR20 -->|Model| TR2
+TR20 -->|Location| TR6
+TR20 -->|Date| TR7
+TR20 -->|Time| TR10
+TR18 -->|Cancel| TR21[Cancel booking request]
+TR21 --> P10
+
+K --> TR22{Was booking created successfully?}
+TR22 -->|Yes| TR23[Return booking ID and CONFIRMED status]
+TR23 --> TR24[Send WhatsApp confirmation]
+TR24 --> P10
+TR22 -->|No| TR25[Do not confirm booking]
+TR25 --> M
+
+TR19 --> TR19A{Duplicate booking request?}
+TR19A -->|Yes| TR19B[Return existing booking result]
+TR19B --> TR23
+TR19A -->|No| K
+
+E -->|Unknown| H
+E -->|Human requested| FB5
+H --> FB1[Ask customer to clarify]
+FB1 --> FB2{Understood after retry?}
+FB2 -->|Yes| E
+FB2 -->|No| FB3[Show guided options]
+FB3 --> FB4{Still not understood?}
+FB4 -->|No| E
+FB4 -->|Yes| FB5[Prepare handoff summary and current context]
+FB5 --> M

@@ -1,0 +1,17 @@
+from enum import StrEnum
+
+
+class Intent(StrEnum):
+    PRICE_QUERY = "PRICE_QUERY"
+    BOOK_TEST_RIDE = "BOOK_TEST_RIDE"
+    HELP = "HELP"
+    CANCEL = "CANCEL"
+    HUMAN_HANDOFF = "HUMAN_HANDOFF"
+    UNKNOWN = "UNKNOWN"
+
+
+class BookingStatus(StrEnum):
+    DRAFT = "DRAFT"
+    PENDING_CONFIRMATION = "PENDING_CONFIRMATION"
+    CONFIRMED = "CONFIRMED"
+    CANCELLED = "CANCELLED"
